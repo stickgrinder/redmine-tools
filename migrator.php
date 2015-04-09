@@ -39,7 +39,10 @@ class Migrator
             12  =>  12
     );
 
-    var $projectsMapping = array();
+    var $projectsMapping = array(
+			'pippo' => 'pluto'	
+	);
+
     var $categoriesMapping = array();
     var $versionsMapping = array();
     var $journalsMapping = array();
@@ -58,8 +61,9 @@ class Migrator
     var $wikiContentsMapping = array();
 	
     var $nbAt = 0;
+	var $createIfNotExists = FALSE;
 
-    function __construct($host1, $db1, $user1, $pass1, $host2, $db2, $user2, $pass2)
+    function __construct($host1, $db1, $user1, $pass1, $host2, $db2, $user2, $pass2, $createIfNotExists = FALSE)
     {
         $this->dbOld = new DBMysql($host1, $user1, $pass1);
         $this->dbOld->connect($db1);
@@ -574,17 +578,31 @@ class Migrator
         }
     }
 
-    function migrateProject($idProjectOld)
+    
+	function checkProjectsMap() {
+		
+		foreach ($this->projectsMapping as $idProjectOld => $idProjectNew) {
+			$result = $this->dbNew->select('projects', array('id' => $idProjectNew));
+			if(!is_resource($result) || mysqli_num_rows($result) <= 0 ) {
+				throw new Exception("Project '$idProjectNew' not found on destination DB.");
+			}
+		}
+		
+		return TRUE;
+
+	}
+	
+	function migrateProject($idProjectOld, $idProjectNew)
     {
         $result = $this->dbOld->select('projects', array('id' => $idProjectOld));
         $projectsOld = $this->dbOld->getAssocArrays($result);
 
+
         foreach ($projectsOld as $projectOld)
         {
             unset($projectOld['id']);
-            $idProjectNew = $this->dbNew->insert('projects', $projectOld);
-            $this->projectsMapping[$idProjectOld] = $idProjectNew;
-            echo "migrating old redmine $idProjectOld => to new redmine $idProjectNew\n";
+			
+            echo "migrating old redmine $idProjectOld to new redmine $idProjectNew\n";
             $this->migrateVersions($idProjectOld);
             $this->migrateCategories($idProjectOld);
             $this->migrateIssues($idProjectOld);
@@ -593,10 +611,9 @@ class Migrator
             $this->migrateBoards($idProjectOld);
             $this->migrateTimeEntries($idProjectOld);
             $this->migrateModules($idProjectOld);
-
             $this->migrateWikis($idProjectOld);
             $this->migrateAttachments($idProjectOld);
-	    $this->migrateWatchers($idProjectOld);
+			$this->migrateWatchers($idProjectOld);
         }
 		
         echo 'projects: ' . count($this->projectsMapping) . " <br>\n";
@@ -618,9 +635,22 @@ class Migrator
         echo 'wiki content versions: ' . count($this->wikiContentVersionsMapping) . " <br>\n";
 		
     }
+	
+	function migrateAllProjects() {
+		
+		$this->checkProjectsMap();
+
+		foreach ($this->projectsMapping as $idProjectOld => $idProjectNew) {
+			$this->migrateProject($idProjectOld, $idProjectNew);	
+		}
+	}
 }
 
 $migrator = new Migrator(   'localhost', 'redmine2', 'root', '*',
                             'localhost', 'redmine_test',   'root', '*');
-$migrator->migrateProject(5);
 
+try {
+	$this->migrateAllProjects();
+} catch (Exception $e) {
+	die($e->message);
+}
