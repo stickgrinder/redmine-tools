@@ -712,5 +712,5 @@ $migrator = new Migrator(   'localhost', 'redmine2', 'root', '*',
 try {
 	$migrator->migrateAllProjects();
 } catch (Exception $e) {
-	die($e->message);
+	die($e->getMessage());
 }
