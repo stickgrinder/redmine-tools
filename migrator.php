@@ -39,9 +39,17 @@ class Migrator
             12  =>  12
     );
 
+    var $rolesMapping = array(
+            1   =>  1,
+            2   =>  2,
+            3   =>  3,
+            4   =>  4,
+            5   =>  5,
+    );
+
     var $projectsMapping = array(
-			'pippo' => 'pluto'	
-	);
+            1 => 1,
+    );
 
     var $categoriesMapping = array();
     var $versionsMapping = array();
@@ -59,11 +67,13 @@ class Migrator
     var $wikipagesMapping = array();
     var $wikiContentVersionsMapping = array();
     var $wikiContentsMapping = array();
+
+    var $membersMapping = array();
+    var $memberRolesMapping = array();
 	
     var $nbAt = 0;
-	var $createIfNotExists = FALSE;
 
-    function __construct($host1, $db1, $user1, $pass1, $host2, $db2, $user2, $pass2, $createIfNotExists = FALSE)
+    function __construct($host1, $db1, $user1, $pass1, $host2, $db2, $user2, $pass2)
     {
         $this->dbOld = new DBMysql($host1, $user1, $pass1);
         $this->dbOld->connect($db1);
@@ -138,6 +148,17 @@ class Migrator
             throw new Exception("No category defined for old category id '$idCategoryOld'");
         else
             return $this->categoriesMapping[$idCategoryOld];
+    }
+
+    private function replaceRole($idRoleOld)
+    {
+        if ($idRoleOld == null)
+            return null;
+
+        if (!isset($this->rolesMapping[$idRolesOld]))
+            throw new Exception("No role defined for old role id '$idRoleOld'");
+        else
+            return $this->rolesMapping[$idRoleOld];
     }
 
     private function migrateCategories($idProjectOld)
@@ -557,14 +578,34 @@ class Migrator
         foreach ($membersOld as $memberOld)
         {
             $idMemberOld = $memberOld['id'];
-            unset($wikiOld['id']);
+            unset($idMemberOld['id']);
 
-            // Update fields for new version of wiki
+            // Update fields for new version of membership
             $memberOld['project_id'] = $this->projectsMapping[$idProjectOld];
             $memberOld['user_id'] = $this->replaceUser($memberOld['user_id']);
 
             $idMemberNew = $this->dbNew->insert('members', $memberOld);
             $this->membersMapping[$idMemberOld] = $idMemberNew;
+            
+            $this->migrateMemberRoles($idMemberOld);
+        }
+    }
+	
+    private function migrateMemberRoles($idMemberOld)
+    {
+        $result = $this->dbOld->select('member_roles', array('project_id' => $idProjectOld));
+        $memberRolesOld = $this->dbOld->getAssocArrays($result);
+        foreach ($memberRolesOld as $memberRoleOld)
+        {
+            $idMemberRoleOld = $memberRoleOld['id'];
+            unset($memberRoleOld['id']);
+
+            // Update fields for new version of membership role
+            $memberRoleOld['member_id'] = $this->membersMapping[$idMemberOld];
+            $memberRoleOld['role_id'] = $this->replaceRole($memberRoleOld['role_id']);
+
+            $idMemberRoleNew = $this->dbNew->insert('member_roles', $memberRoleOld);
+            $this->memberRolesMapping[$idMemberRoleOld] = $idMemberRoleNew;
         }
     }
 	
