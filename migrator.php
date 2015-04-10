@@ -550,6 +550,24 @@ class Migrator
         }
     }
 	
+    private function migrateMembers($idProjectOld)
+    {
+        $result = $this->dbOld->select('members', array('project_id' => $idProjectOld));
+        $membersOld = $this->dbOld->getAssocArrays($result);
+        foreach ($membersOld as $memberOld)
+        {
+            $idMemberOld = $memberOld['id'];
+            unset($wikiOld['id']);
+
+            // Update fields for new version of wiki
+            $memberOld['project_id'] = $this->projectsMapping[$idProjectOld];
+            $memberOld['user_id'] = $this->replaceUser($memberOld['user_id']);
+
+            $idMemberNew = $this->dbNew->insert('members', $memberOld);
+            $this->membersMapping[$idMemberOld] = $idMemberNew;
+        }
+    }
+	
 
     private function migrateIssues($idProjectOld)
     {
@@ -583,7 +601,7 @@ class Migrator
 		
 		foreach ($this->projectsMapping as $idProjectOld => $idProjectNew) {
 			$result = $this->dbNew->select('projects', array('id' => $idProjectNew));
-			if(!is_resource($result) || mysqli_num_rows($result) <= 0 ) {
+			if( mysqli_num_rows($result) <= 0 ) {
 				throw new Exception("Project '$idProjectNew' not found on destination DB.");
 			}
 		}
@@ -613,7 +631,8 @@ class Migrator
             $this->migrateModules($idProjectOld);
             $this->migrateWikis($idProjectOld);
             $this->migrateAttachments($idProjectOld);
-			$this->migrateWatchers($idProjectOld);
+            $this->migrateWatchers($idProjectOld);
+            $this->migrateMembers($idProjectOld);
         }
 		
         echo 'projects: ' . count($this->projectsMapping) . " <br>\n";
@@ -633,7 +652,7 @@ class Migrator
         echo 'wiki pages: ' . count($this->wikipagesMapping) . " <br>\n";
         echo 'wiki contents: ' . count($this->wikiContentsMapping) . " <br>\n";
         echo 'wiki content versions: ' . count($this->wikiContentVersionsMapping) . " <br>\n";
-		
+        echo 'projects memberships: ' . count($this->membersMapping) . " <br>\n";
     }
 	
 	function migrateAllProjects() {
@@ -650,7 +669,7 @@ $migrator = new Migrator(   'localhost', 'redmine2', 'root', '*',
                             'localhost', 'redmine_test',   'root', '*');
 
 try {
-	$this->migrateAllProjects();
+	$migrator->migrateAllProjects();
 } catch (Exception $e) {
 	die($e->message);
 }
