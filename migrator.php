@@ -45,7 +45,7 @@ class Migrator
     );
 
     var $projectsMapping = array(
-      3 => 191,
+      3 => 192,
     );
 
     var $categoriesMapping = array();
@@ -656,39 +656,79 @@ class Migrator
     {
       unset($projectOld['id']);
 
-      echo "migrating old redmine $idProjectOld to new redmine $idProjectNew\n";
+      echo "Migrating old redmine $idProjectOld to new redmine $idProjectNew:\n\n";
+
+      echo "Migrating Versions... ";
       $this->migrateVersions($idProjectOld);
+      echo count($this->versionsMapping) . " migrated\n";
+
+      echo "Migrating Categories... ";
       $this->migrateCategories($idProjectOld);
+      echo count($this->categoriesMapping) . " migrated\n";
+
+      echo "Migrating Issues... ";
       $this->migrateIssues($idProjectOld);
+      echo count($this->issuesMapping) . " migrated\n";
+
+      echo "Migrating News... ";
       $this->migrateNews($idProjectOld);
+      echo count($this->newsMapping) . " migrated\n";
+
+      echo "Migrating Documents... ";
       $this->migrateDocuments($idProjectOld);
+      echo count($this->documentsMapping) . " migrated\n";
+
+      echo "Migrating Boards... ";
       $this->migrateBoards($idProjectOld);
+      echo count($this->boardsMapping) . " migrated\n";
+
+      echo "Migrating Time Entries...";
       $this->migrateTimeEntries($idProjectOld);
+      echo count($this->timeEntriessMapping) . " migrated\n";
+
+      echo "Migrating Enabled Modules...";
       $this->migrateModules($idProjectOld);
+      echo count($this->modulesMapping) . " migrated\n";
+
+      echo "Migrating Wikis...";
       $this->migrateWikis($idProjectOld);
+      echo count($this->wikisMapping) . " migrated [" .
+           count($this->wikipagesMapping) ." pages, " .
+           count($this->wikiContentsMapping) . " contents, ".
+           count($this->wikiContentVersionsMapping). " content versions]\n";
+
+      echo "Migrating Attachments...";
       $this->migrateAttachments($idProjectOld);
+      echo $this->nbAt . " migrated\n";
+
+      echo "Migrating Watchers...";
       $this->migrateWatchers($idProjectOld);
+      echo count($this->watchersMapping) . " migrated\n";
+
+      echo "Migrating Members...";
       $this->migrateMembers($idProjectOld);
+      echo count($this->membersMapping) . " migrated\n";
     }
 
-    echo 'projects: ' . count($this->projectsMapping) . " <br>\n";
-    echo 'issues: ' . count($this->issuesMapping) . " <br>\n";
-    echo 'attachments: ' . $this->nbAt . " <br>\n";
-    echo 'categories: ' . count($this->categoriesMapping) . " <br>\n";
-    echo 'versions: ' . count($this->versionsMapping) . " <br>\n";
-    echo 'news: ' . count($this->newsMapping) . " <br>\n";
-    echo 'documents: ' . count($this->documentsMapping) . " <br>\n";
-    echo 'journals: ' . count($this->journalsMapping) . " <br>\n";
-    echo 'watchers: ' . count($this->watchersMapping) . " <br>\n";
-    echo 'boards: ' . count($this->boardsMapping) . " <br>\n";
-    echo 'messages: ' . count($this->messagesMapping) . " <br>\n";
-    echo 'time entries: ' . count($this->timeEntriesMapping) . " <br>\n";
-    echo 'modules enabled: ' . count($this->modulesMapping) . " <br>\n";
-    echo 'wikis: ' . count($this->wikisMapping) . " <br>\n";
-    echo 'wiki pages: ' . count($this->wikipagesMapping) . " <br>\n";
-    echo 'wiki contents: ' . count($this->wikiContentsMapping) . " <br>\n";
-    echo 'wiki content versions: ' . count($this->wikiContentVersionsMapping) . " <br>\n";
-    echo 'projects memberships: ' . count($this->membersMapping) . " <br>\n";
+    echo "\n\nMIGRATION FINISHED:\n\n";
+    echo 'Projects: ' . count($this->projectsMapping) . " <br>\n";
+    echo 'Issues: ' . count($this->issuesMapping) . " <br>\n";
+    echo 'Attachments: ' . $this->nbAt . " <br>\n";
+    echo 'Categories: ' . count($this->categoriesMapping) . " <br>\n";
+    echo 'Versions: ' . count($this->versionsMapping) . " <br>\n";
+    echo 'News: ' . count($this->newsMapping) . " <br>\n";
+    echo 'Documents: ' . count($this->documentsMapping) . " <br>\n";
+    echo 'Journals: ' . count($this->journalsMapping) . " <br>\n";
+    echo 'Watchers: ' . count($this->watchersMapping) . " <br>\n";
+    echo 'Boards: ' . count($this->boardsMapping) . " <br>\n";
+    echo 'Messages: ' . count($this->messagesMapping) . " <br>\n";
+    echo 'Time entries: ' . count($this->timeEntriesMapping) . " <br>\n";
+    echo 'Enabled modules: ' . count($this->modulesMapping) . " <br>\n";
+    echo 'Wikis: ' . count($this->wikisMapping) . " <br>\n";
+    echo 'Wiki pages: ' . count($this->wikipagesMapping) . " <br>\n";
+    echo 'Wiki contents: ' . count($this->wikiContentsMapping) . " <br>\n";
+    echo 'Wiki content versions: ' . count($this->wikiContentVersionsMapping) . " <br>\n";
+    echo 'Projects memberships: ' . count($this->membersMapping) . " <br>\n";
   }
 
   function migrateAllProjects() {
@@ -701,10 +741,8 @@ class Migrator
   }
 }
 
-
-$migrator = new Migrator( 'localhost', 'source_db', 'user', 'pass', 'localhost', 'dest_db', 'user', 'pass');
-
 try {
+  $migrator = new Migrator( 'localhost', 'source_db', 'user', 'pass', 'localhost', 'dest_db', 'user', 'pass');
   $migrator->migrateAllProjects();
 } catch (Exception $e) {
   die($e->getMessage());
